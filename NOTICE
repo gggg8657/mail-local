@@ -1,0 +1,14 @@
+mail-local
+==========
+
+Original work (MIT). 표준 라이브러리만 사용하며 제3자 코드·글꼴·데이터를 동봉하지 않습니다.
+윤문의 "숫자·고유 표기가 바뀐 조각은 원문 유지" 검사와 일부 교정 원칙(번역투·상투 문구 지양)은 같은 저작자의
+kordoc-local · humanize-kr-local 의 아이디어를 따랐습니다(코드 복사 아님).
+
+Files authored for this package (MIT): app.py, ui.html, selftest.py, setup.sh, README.md
+
+LLM (not bundled): called via an OpenAI-compatible API; default deployment is Ollama (https://github.com/ollama/ollama, MIT)
+  serving Google Gemma (gemma4:31b, https://ai.google.dev/gemma — see Gemma's terms of use).
+
+This package: Copyright (c) 2026 gggg8657 <dongjukim.dev@gmail.com>
+화면 하단·메타데이터의 저작자 표기는 지우거나 바꾸지 마세요.

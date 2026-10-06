@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>메일 작성·윤문</title>
+<style>
+  :root{--bg:#f6f7f9;--fg:#1d1f23;--muted:#6b7280;--line:#dde1e6;--card:#fff;--acc:#2563eb;--acc2:#e8efff;--del:#fde2e2;--delf:#b42318;--ins:#dcfce7;--insf:#166534;--warn:#fff4d6;--warnf:#8a5a00}
+  *{box-sizing:border-box}
+  body{font:14.5px/1.6 -apple-system,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--fg);margin:0}
+  .wrap{max-width:1280px;margin:0 auto;padding:18px 16px}
+  header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  h1{font-size:20px;margin:0}h1 small{font-weight:400;color:var(--muted);font-size:13px;margin-left:6px}
+  .priv{font-size:12px;color:#166534;background:#ecfdf3;border:1px solid #c6f0d5;border-radius:99px;padding:2px 10px}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:12px 0 14px}
+  .tabs button{border:none;border-bottom:2px solid transparent;border-radius:0;background:none;padding:8px 14px;cursor:pointer;color:var(--muted);font:inherit;font-weight:600}
+  .tabs button.on{color:var(--fg);border-bottom-color:var(--acc)}
+  [hidden]{display:none!important}
+  .cols{display:grid;grid-template-columns:minmax(330px,440px) minmax(0,1fr);gap:16px;align-items:start}
+  @media (max-width:900px){.cols{grid-template-columns:minmax(0,1fr)}}
+  .cols>*,.row>*,.row3>*{min-width:0}
+  #out,.hist,.notes,.check{overflow-wrap:anywhere}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .panel h3{margin:0 0 8px;font-size:14px}
+  label{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);margin-bottom:9px}
+  .panel label>input:not([type=radio]),.panel label>select,.panel label>textarea{width:100%;min-width:0}.bar label>select{width:auto}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  input,select,textarea,button{font:inherit;font-size:14px;padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--fg)}
+  textarea{resize:vertical;min-height:80px;line-height:1.55}
+  button{cursor:pointer}button:hover{border-color:#b8c0cc}button:disabled{opacity:.5;cursor:default}
+  button.primary{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600;padding:8px 18px}
+  button.sm{font-size:12.5px;padding:3px 9px}
+  .seg{display:flex;flex-wrap:wrap;gap:4px}.seg button{font-size:13px;padding:4px 10px;border-radius:99px}
+  .seg button.on{background:var(--acc2);border-color:var(--acc);color:var(--acc);font-weight:600}
+  details.sig{margin:4px 0 10px;font-size:13px}details.sig summary{cursor:pointer;color:var(--muted)}
+  .bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:10px 0}
+  #status{color:var(--muted);font-size:13px}
+  .empty{color:var(--muted);text-align:center;padding:50px 10px}
+  pre.stream{white-space:pre-wrap;font:inherit;background:#fafbfc;border:1px dashed var(--line);border-radius:8px;padding:12px;min-height:80px;margin:0;color:#374151}
+  .subj{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+  .subj label{flex-direction:row;align-items:center;gap:8px;margin:0;color:var(--fg);font-size:14px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;cursor:pointer}
+  .subj label.on{border-color:var(--acc);background:var(--acc2)}
+  .subj input{margin:0}
+  textarea#body{width:100%;min-height:340px;font-size:14.5px;line-height:1.75}
+  .notes{margin:8px 0;font-size:13px}.notes div{background:var(--warn);color:var(--warnf);border-radius:6px;padding:5px 9px;margin:4px 0}
+  .check{margin:10px 0;border:1px solid var(--line);border-radius:8px;padding:8px 12px}.check h4{margin:0 0 6px;font-size:13px}
+  .check li{list-style:none;margin:3px 0;font-size:13.5px}.check li b{display:inline-block;min-width:66px;font-size:12px;border-radius:5px;padding:0 6px;margin-right:6px;text-align:center}
+  .ok b{background:var(--ins);color:var(--insf)}.ng b{background:var(--warn);color:var(--warnf)}.na b{background:#eef0f3;color:var(--muted)}
+  .vtabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}.vtabs button{font-size:12.5px;padding:2px 10px}.vtabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+  .refine{display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+  .refine input{flex:1;min-width:min(200px,100%)}
+  .diffview{white-space:pre-wrap;line-height:2;background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:14.5px}
+  del{background:var(--del);color:var(--delf);text-decoration:line-through;text-decoration-color:#e5a3a3}
+  ins{background:var(--ins);color:var(--insf);text-decoration:none}
+  .u{border-radius:4px;cursor:pointer;padding:1px 0}.u:hover{outline:1px solid #b8c0cc}
+  .u.rev{opacity:.8;background:#f1f2f4}.u.rev::after{content:" ↺원문";font-size:11px;color:var(--muted)}
+  .u.w{background:var(--warn);outline:1px dashed #e0b44a}.u.w::after{content:" ⚠원문 유지";font-size:11px;color:var(--warnf)}
+  .legend{font-size:12px;color:var(--muted);margin:6px 0}
+  .hist li{list-style:none;display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid #eef0f3}
+  .hist li .t{flex:1;min-width:0;cursor:pointer}.hist li .hint{flex:none}.hist li .t:hover{color:var(--acc)}
+  .tag{font-size:11.5px;border-radius:5px;padding:1px 7px;background:#eef0f3;color:#374151}
+  .hint{font-size:12px;color:var(--muted)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.on{opacity:.95}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>메일 작성·윤문 <small>업무 메일 초안 · 답장 · 다듬기</small></h1>
+  <span class="priv" title="메일 내용은 이 서버의 로컬 LLM 으로만 처리하며 외부로 보내지 않습니다. 이력은 이 서버의 도구 데이터 폴더에 저장됩니다.">🔒 로컬 LLM · 외부 전송 없음</span>
+  <span class="hint" id="modelinfo"></span>
+</header>
+<div class="tabs" id="tabs">
+  <button data-t="write" class="on">메일 작성</button><button data-t="reply">회신 작성</button><button data-t="polish">메일 윤문</button><button data-t="hist">작성 이력</button>
+</div>
+
+<div class="cols" id="main">
+<div>
+  <!-- 작성 -->
+  <div class="panel" id="f-write">
+    <h3>받는 사람</h3>
+    <div class="row"><label>이름<input id="w-name" placeholder="홍길동"></label><label>직함<input id="w-title" placeholder="부장 / 책임연구원 / 교수"></label></div>
+    <div class="row"><label>소속<input id="w-org" placeholder="○○부 / ○○대학교"></label><label>관계<select id="w-rel"></select></label></div>
+    <label>메일 주소 (선택 — '메일 앱에서 열기'에만 씀)<input id="w-addr" placeholder="name@example.com"></label>
+    <h3>목적</h3><div class="seg" id="w-purpose"></div>
+    <label style="margin-top:10px">핵심 내용 * <span class="hint">메모·불릿으로 대충 적어도 됩니다</span>
+      <textarea id="w-points" rows="7" placeholder="- 3분기 과제 실적 보고서 초안 완성&#10;- 검토 후 수정 의견 부탁&#10;- 10/20 원내 제출 마감이라 10/17까지 의견 필요"></textarea></label>
+    <div class="row"><label>첨부 (선택)<input id="w-attach" placeholder="3분기 실적보고서(초안).hwpx"></label><label>마감일 (선택)<input id="w-due" type="date"></label></div>
+    <div class="row"><label>어조<select id="w-tone"></select></label><label>길이<select id="w-len"></select></label></div>
+    <label>언어<select id="w-lang"><option value="ko">국문 메일</option><option value="en">영문 메일 (국문 메모 → 영문)</option></select></label>
+  </div>
+  <!-- 회신 -->
+  <div class="panel" id="f-reply" hidden>
+    <label>받은 메일 원문 * <span class="hint">보낸 사람·제목 줄까지 붙여 넣으면 더 정확합니다</span>
+      <textarea id="r-orig" rows="11" placeholder="제목: …&#10;&#10;이연구 선임님, 안녕하세요. …"></textarea></label>
+    <label>이렇게 답장 (요지)<textarea id="r-points" rows="5" placeholder="- 회의 참석 가능, 단 15일은 어렵고 16일 오후 가능&#10;- 자료는 다음 주 화요일까지 보내겠다"></textarea></label>
+    <div class="row"><label>보낸 사람과의 관계<select id="r-rel"></select></label><label>첨부 (선택)<input id="r-attach"></label></div>
+    <div class="row3"><label>어조<select id="r-tone"></select></label><label>길이<select id="r-len"></select></label>
+      <label>언어<select id="r-lang"><option value="auto">원문과 같게</option><option value="ko">국문</option><option value="en">영문</option></select></label></div>
+  </div>
+  <!-- 윤문 -->
+  <div class="panel" id="f-polish" hidden>
+    <label>다듬을 메일 * <span class="hint">서명 구분선(--)·전달 원문 아래는 건드리지 않습니다</span>
+      <textarea id="p-text" rows="16" placeholder="내가 쓴 메일을 붙여 넣으세요"></textarea></label>
+    <h3>모드</h3><div class="seg" id="p-mode"></div>
+    <p class="hint" style="margin:8px 0 0">숫자·날짜·금액·이메일·영문 약어가 바뀐 문장은 자동으로 <b>원문 유지</b>하고 ⚠ 로 표시합니다.</p>
+  </div>
+
+  <div class="panel" id="f-sig" style="margin-top:12px">
+    <details class="sig" id="sigbox"><summary>보내는 사람·서명 <span class="hint" id="sigsum"></span> (이 브라우저에 기억)</summary>
+      <div class="row3" style="margin-top:8px"><label>이름<input id="s-name" placeholder="이연구"></label><label>직함<input id="s-title" placeholder="선임연구원"></label><label>소속<input id="s-dept" placeholder="인공지능응용연구실"></label></div>
+      <label>국문 서명 (본문 끝에 그대로 붙음)<textarea id="s-ko" rows="4" placeholder="--&#10;이연구 선임연구원 | 한국원자력연구원 인공지능응용연구실&#10;Tel. 042-000-0000 | yeongu@example.org"></textarea></label>
+      <label>영문 서명<textarea id="s-en" rows="4" placeholder="--&#10;Yeongu Lee, Ph.D. | Senior Researcher&#10;Korea Atomic Energy Research Institute (KAERI)"></textarea></label>
+    </details>
+    <div class="bar"><label style="margin:0;flex-direction:row;align-items:center;gap:6px">모델 <select id="model"></select></label>
+      <button class="primary" id="go">작성</button><span id="status"></span></div>
+  </div>
+</div>
+
+<div class="panel" id="out"><div class="empty">왼쪽을 채우고 실행하면 결과가 여기에 바로 나옵니다.<br><span class="hint">입력 내용은 로컬 LLM 으로만 처리됩니다. 개인정보·대외비는 필요한 만큼만 적어 주세요.</span></div></div>
+</div>
+
+<div class="panel" id="histp" hidden><h3>작성 이력 <span class="hint">— 클릭하면 다시 열어 이어서 다듬을 수 있습니다</span></h3><ul class="hist" id="hist" style="padding:0;margin:0"></ul></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const LS = {get(k, d) { try { return JSON.parse(localStorage.getItem('mail-local:' + k)) ?? d } catch { return d } },
+            set(k, v) { try { localStorage.setItem('mail-local:' + k, JSON.stringify(v)) } catch {} }};
+const KIND_KO = {write: '작성', reply: '회신', polish: '윤문'};
+let TAB = 'write', META = null, busy = false;
+const CUR = {write: null, reply: null, polish: null};   // {id, kind, versions, vi}
+let selSubj = 0, showDiff = false;
+
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 1600); }
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+  toast('복사했습니다');
+}
+function seg(el, items, val, key) {
+  el.innerHTML = items.map(x => { const [id, lab] = typeof x === 'string' ? [x, x] : [x.id, x.label]; return `<button type="button" data-v="${esc(id)}" class="${id === val ? 'on' : ''}">${esc(lab)}</button>`; }).join('');
+  el.querySelectorAll('button').forEach(b => b.onclick = () => { el.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); LS.set(key, b.dataset.v); });
+}
+const segVal = el => (el.querySelector('button.on') || {}).dataset?.v;
+const opts = (el, items, val) => el.innerHTML = items.map(x => `<option ${x === val ? 'selected' : ''}>${esc(x)}</option>`).join('');
+
+// ── 초기화 ──
+fetch('api/meta').then(r => r.json()).then(m => {
+  META = m;
+  opts($('w-rel'), m.relations, LS.get('w-rel', '상급자')); opts($('r-rel'), m.relations, LS.get('r-rel', '동료'));
+  for (const p of ['w', 'r']) { opts($(p + '-tone'), m.tones, LS.get(p + '-tone', '정중')); opts($(p + '-len'), m.lengths, LS.get(p + '-len', '보통')); }
+  seg($('w-purpose'), m.purposes, LS.get('w-purpose', '요청'), 'w-purpose');
+  seg($('p-mode'), m.polish_modes, LS.get('p-mode', 'natural'), 'p-mode');
+  fetch('api/models').then(r => r.json()).then(ms => {
+    if (!ms.length) { $('model').innerHTML = `<option>${esc(m.model)}</option>`; $('status').textContent = 'LLM 서버에 연결할 수 없습니다'; return; }
+    $('model').innerHTML = ms.map(x => `<option ${x === m.model ? 'selected' : ''}>${esc(x)}</option>`).join('');
+  });
+});
+for (const id of ['w-rel', 'r-rel', 'w-tone', 'r-tone', 'w-len', 'r-len', 'w-lang', 'r-lang']) $(id).addEventListener('change', e => LS.set(id, e.target.value));
+$('w-lang').value = LS.get('w-lang', 'ko'); $('r-lang').value = LS.get('r-lang', 'auto');
+// 서명: 브라우저에 기억
+const SIGF = ['s-name', 's-title', 's-dept', 's-ko', 's-en'];
+SIGF.forEach(id => { $(id).value = LS.get(id, ''); $(id).addEventListener('input', () => { LS.set(id, $(id).value); sigsum(); }); });
+function sigsum() { const s = [$('s-dept').value, $('s-name').value, $('s-title').value].filter(Boolean).join(' '); $('sigsum').textContent = s ? '— ' + s : '— 비어 있음'; }
+sigsum(); if (!$('s-name').value) $('sigbox').open = true;
+const sender = () => ({name: $('s-name').value.trim(), title: $('s-title').value.trim(), dept: $('s-dept').value.trim(), sig_ko: $('s-ko').value, sig_en: $('s-en').value});
+
+// ── 탭 ──
+$('tabs').querySelectorAll('button').forEach(b => b.onclick = () => setTab(b.dataset.t));
+function setTab(t) {
+  TAB = t;
+  $('tabs').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  $('main').hidden = t === 'hist'; $('histp').hidden = t !== 'hist';
+  if (t === 'hist') return loadHist();
+  for (const k of ['write', 'reply', 'polish']) $('f-' + k).hidden = k !== t;
+  $('go').textContent = {write: '메일 작성', reply: '답장 작성', polish: '윤문하기'}[t];
+  render();
+}
+setTab('write');
+
+// ── 입력 모으기 ──
+function inputs(kind) {
+  if (kind === 'write') return {to: {name: $('w-name').value.trim(), title: $('w-title').value.trim(), org: $('w-org').value.trim(), relation: $('w-rel').value, addr: $('w-addr').value.trim()},
+    purpose: segVal($('w-purpose')), points: $('w-points').value, attach: $('w-attach').value, due: $('w-due').value, tone: $('w-tone').value, length: $('w-len').value, lang: $('w-lang').value, sender: sender()};
+  if (kind === 'reply') return {original: $('r-orig').value, points: $('r-points').value, to: {relation: $('r-rel').value}, attach: $('r-attach').value,
+    tone: $('r-tone').value, length: $('r-len').value, lang: $('r-lang').value, sender: sender()};
+  return {text: $('p-text').value, mode: segVal($('p-mode'))};
+}
+function fill(kind, v) {
+  if (kind === 'write') {
+    const t = v.to || {}; $('w-name').value = t.name || ''; $('w-title').value = t.title || ''; $('w-org').value = t.org || ''; $('w-addr').value = t.addr || '';
+    if (t.relation) $('w-rel').value = t.relation;
+    $('w-purpose').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === v.purpose));
+    $('w-points').value = v.points || ''; $('w-attach').value = v.attach || ''; $('w-due').value = v.due || '';
+    $('w-tone').value = v.tone || '정중'; $('w-len').value = v.length || '보통'; $('w-lang').value = v.lang || 'ko';
+  } else if (kind === 'reply') {
+    $('r-orig').value = v.original || ''; $('r-points').value = v.points || ''; $('r-attach').value = v.attach || '';
+    if ((v.to || {}).relation) $('r-rel').value = v.to.relation;
+    $('r-tone').value = v.tone || '정중'; $('r-len').value = v.length || '보통'; $('r-lang').value = v.lang || 'auto';
+  } else {
+    $('p-text').value = v.text || '';
+    $('p-mode').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === v.mode));
+  }
+}
+
+// ── 실행 (SSE) ──
+$('go').onclick = () => go(false);
+async function go(regen, instruction = '') {
+  if (busy) return;
+  const kind = TAB, cur = CUR[kind];
+  const req = {kind, inputs: inputs(kind), model: $('model').value};
+  if ((regen || instruction) && cur) req.id = cur.id;
+  if (instruction && cur) { req.instruction = instruction; req.prev = currentPrev(kind); }
+  if (kind === 'write' && !req.inputs.points.trim()) return toast('핵심 내용을 적어 주세요');
+  if (kind === 'reply' && !req.inputs.original.trim()) return toast('받은 메일 원문을 붙여 넣어 주세요');
+  if (kind === 'polish' && !req.inputs.text.trim()) return toast('다듬을 메일을 붙여 넣어 주세요');
+  if (!regen && !instruction) CUR[kind] = null;
+  busy = true; $('go').disabled = true; const t0 = Date.now();
+  $('out').innerHTML = `<div class="hint" id="stage">요청 중…</div><pre class="stream" id="stream"></pre>`;
+  $('status').textContent = '생성 중…';
+  try {
+    const r = await fetch('api/run', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(req)});
+    const rd = r.body.getReader(), dec = new TextDecoder(); let buf = '', done = null;
+    for (;;) {
+      const {value, done: end} = await rd.read(); if (end) break;
+      buf += dec.decode(value, {stream: true});
+      let i; while ((i = buf.indexOf('\n\n')) >= 0) {
+        const line = buf.slice(0, i); buf = buf.slice(i + 2);
+        if (!line.startsWith('data: ')) continue;
+        const ev = JSON.parse(line.slice(6));
+        if (ev.token && $('stream')) { $('stream').textContent += ev.token; }
+        if (ev.stage && $('stage')) { $('stage').textContent = ev.msg; if (ev.reset && $('stream')) $('stream').textContent = ''; }
+        if (ev.error) throw new Error(ev.error);
+        if (ev.done) done = ev.done;
+      }
+    }
+    if (!done) throw new Error('응답이 끊겼습니다');
+    const c = CUR[kind] && CUR[kind].id === done.id ? CUR[kind] : {id: done.id, kind, versions: []};
+    c.versions.push(done.result); c.vi = c.versions.length - 1; CUR[kind] = c;
+    $('status').textContent = `완료 ${((Date.now() - t0) / 1000).toFixed(0)}초`;
+    selSubj = 0; render();
+  } catch (e) {
+    $('status').textContent = ''; $('out').insertAdjacentHTML('afterbegin', `<div class="notes"><div>⚠ ${esc(e.message)}</div></div>`);
+    if (CUR[kind]) setTimeout(render, 2500);
+  } finally { busy = false; $('go').disabled = false; }
+}
+function currentPrev(kind) {
+  const c = CUR[kind], v = c.versions[c.vi];
+  if (kind === 'polish') return polishText(v);
+  return {subjects: v.subjects, body: $('body') ? $('body').value : v.body};
+}
+
+// ── 결과 그리기 ──
+function render() {
+  if (TAB === 'hist') return;
+  const c = CUR[TAB];
+  if (!c) { $('out').innerHTML = `<div class="empty">왼쪽을 채우고 실행하면 결과가 여기에 바로 나옵니다.<br><span class="hint">입력 내용은 로컬 LLM 으로만 처리됩니다. 개인정보·대외비는 필요한 만큼만 적어 주세요.</span></div>`; return; }
+  const v = c.versions[c.vi];
+  const vt = c.versions.length > 1 ? `<div class="vtabs">${c.versions.map((x, i) => `<button class="${i === c.vi ? 'on' : ''}" data-vi="${i}" title="${esc(x.instruction || '처음')}">${i + 1}판${x.instruction ? ' · ' + esc(x.instruction.slice(0, 12)) : ''}</button>`).join('')}</div>` : '';
+  $('out').innerHTML = vt + (TAB === 'polish' ? polishHTML(v) : mailHTML(v)) + refineHTML(TAB);
+  $('out').querySelectorAll('.vtabs button').forEach(b => b.onclick = () => { c.vi = +b.dataset.vi; selSubj = 0; render(); });
+  TAB === 'polish' ? bindPolish(v) : bindMail(v);
+  $('out').querySelectorAll('[data-ref]').forEach(b => b.onclick = () => go(false, b.dataset.ref));
+  $('refine-go').onclick = () => { const s = $('refine-in').value.trim(); if (s) go(false, s); };
+  $('refine-in').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) $('refine-go').click(); };
+  $('regen').onclick = () => go(true);
+}
+function refineHTML(kind) {
+  const chips = kind === 'polish' ? ['더 정중하게', '더 간결하게', '조금 더 부드럽게', '딱딱한 한자어를 쉬운 말로']
+    : ['더 짧게', '더 정중하게', '더 간결하게', '조금 더 친근하게', '항목(불릿)으로 정리', kind === 'write' && $('w-lang').value === 'en' ? '국문으로' : '영문으로'];
+  return `<div class="refine"><button id="regen" title="같은 입력으로 다시">↻ 다시 생성</button>
+    ${chips.map(x => `<button class="sm" data-ref="${esc(x)}">${esc(x)}</button>`).join('')}
+    <input id="refine-in" placeholder="이어서 다듬기 — 예: 마감일을 더 강조해 줘, 첫 인사를 줄여 줘"><button id="refine-go">다듬기</button></div>`;
+}
+
+function mailHTML(v) {
+  const subs = v.subjects.length ? v.subjects : ['(제목 없음)'];
+  let h = `<div class="subj">${subs.map((s, i) => `<label class="${i === selSubj ? 'on' : ''}"><input type="radio" name="subj" value="${i}" ${i === selSubj ? 'checked' : ''}><span style="flex:1">${esc(s)}</span><button class="sm" data-cs="${i}">복사</button></label>`).join('')}</div>`;
+  if (v.notes && v.notes.length) h += `<div class="notes">${v.notes.map(n => `<div>⚠ ${esc(n)}</div>`).join('')}</div>`;
+  h += `<textarea id="body">${esc(v.body)}</textarea>`;
+  h += `<div class="bar"><button id="c-body">본문 복사</button><button id="c-all">제목+본문 복사</button><button id="mailto">메일 앱에서 열기</button>
+    ${v.diff ? `<button id="tdiff">${showDiff ? '비교 닫기' : '이전 판과 비교'}</button>` : ''}<span class="hint">본문은 직접 고쳐도 됩니다 (이어서 다듬기에 반영)</span></div>`;
+  if (v.diff && showDiff) h += `<div class="legend"><del>삭제</del> <ins>추가</ins></div><div class="diffview">${opsHTML(v.diff)}</div>`;
+  if (v.checklist && v.checklist.length) {
+    const miss = v.checklist.filter(x => x.ok === false).length;
+    h += `<div class="check"><h4>원문 요청사항 체크 ${miss ? `<span style="color:var(--warnf)">— 확인 필요 ${miss}건</span>` : '<span style="color:var(--insf)">— 모두 반영</span>'}</h4><ul style="padding:0;margin:0">
+      ${v.checklist.map(x => `<li class="${x.ok === true ? 'ok' : x.ok === false ? 'ng' : 'na'}"><b>${x.ok === true ? '반영' : x.ok === false ? '확인 필요' : '-'}</b>${esc(x.text)}</li>`).join('')}</ul></div>`;
+  }
+  return h;
+}
+function bindMail(v) {
+  const subj = () => v.subjects[selSubj] || '', body = () => $('body').value;
+  $('out').querySelectorAll('input[name=subj]').forEach(r => r.onchange = () => { selSubj = +r.value; $('out').querySelectorAll('.subj label').forEach((l, i) => l.classList.toggle('on', i === selSubj)); });
+  $('out').querySelectorAll('[data-cs]').forEach(b => b.onclick = e => { e.preventDefault(); copy(v.subjects[+b.dataset.cs]); });
+  $('body').oninput = () => { v.body = $('body').value; };
+  $('c-body').onclick = () => copy(body());
+  $('c-all').onclick = () => copy(`제목: ${subj()}\n\n${body()}`);
+  $('mailto').onclick = () => {
+    const to = TAB === 'write' ? $('w-addr').value.trim() : '';
+    const url = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj())}&body=${encodeURIComponent(body())}`;
+    if (url.length > 1900) toast('본문이 길어 메일 앱에서 잘릴 수 있습니다. 복사해 붙여 넣으세요');
+    location.href = url;
+  };
+  if ($('tdiff')) $('tdiff').onclick = () => { showDiff = !showDiff; render(); };
+}
+const opsHTML = ops => ops.map(([o, t]) => o === '=' ? esc(t) : o === '-' ? `<del>${esc(t)}</del>` : `<ins>${esc(t)}</ins>`).join('');
+
+// 윤문: 문장마다 diff, 클릭으로 원문/수정 토글
+function polishText(v) { return v.parts.map(p => typeof p === 'number' ? (v.units[p].use ? v.units[p].after : v.units[p].before) : p).join('').replace(/[ \t]+\n/g, '\n'); }
+function polishHTML(v) {
+  const used = v.units.filter(u => u.use).length, warn = v.units.filter(u => u.warn).length;
+  let h = `<div class="bar" style="margin-top:0"><b>${esc(v.label)}</b><span class="hint">${v.total}문장 중 ${used}문장 수정${warn ? ` · <span style="color:var(--warnf)">⚠ ${warn}건</span>` : ''}</span>
+    <span style="flex:1"></span><button class="sm" id="pv-diff">${showDiff ? '결과만 보기' : '바뀐 곳 보기'}</button></div>`;
+  h += `<div class="legend">${showDiff ? '<del>삭제</del> <ins>추가</ins> · 문장을 클릭하면 원문 ↔ 수정 전환 · ⚠ 숫자·고유 표기가 바뀌어 원문을 유지한 문장(클릭하면 적용)' : '문장을 클릭하면 원문 ↔ 수정 전환'}</div>`;
+  if (v.warnings.length) h += `<div class="notes">${v.warnings.map(n => `<div>⚠ ${esc(n)}</div>`).join('')}</div>`;
+  h += `<div class="diffview" id="pv">${v.parts.map(p => {
+    if (typeof p !== 'number') return esc(p);
+    const u = v.units[p];
+    if (!u.changed) return esc(u.before);
+    const cls = `u ${u.use ? '' : 'rev'} ${u.warn && !u.use ? 'w' : ''}`;
+    const inner = showDiff && (u.use || u.warn) ? opsHTML(u.ops) : esc(u.use ? u.after : u.before);
+    return `<span class="${cls}" data-u="${p}" title="${esc(u.warn || (u.use ? '클릭: 원문으로 되돌리기' : '클릭: 수정 적용'))}">${inner || '<del>(삭제됨)</del>'}</span>`;
+  }).join('')}</div>`;
+  h += `<div class="bar"><button id="c-pol">결과 복사</button><button id="all-orig" class="sm">모두 원문</button><button id="all-new" class="sm">모두 수정 적용</button>
+    <button id="to-edit" class="sm" title="결과를 왼쪽 입력 칸으로 옮겨 다른 모드로 한 번 더">결과를 입력으로</button></div>`;
+  return h;
+}
+function bindPolish(v) {
+  $('pv').querySelectorAll('[data-u]').forEach(s => s.onclick = () => { const u = v.units[+s.dataset.u]; u.use = !u.use; render(); });
+  $('pv-diff').onclick = () => { showDiff = !showDiff; render(); };
+  $('c-pol').onclick = () => copy(polishText(v));
+  $('all-orig').onclick = () => { v.units.forEach(u => u.use = false); render(); };
+  $('all-new').onclick = () => { v.units.forEach(u => { if (u.changed) u.use = true; }); render(); };
+  $('to-edit').onclick = () => { $('p-text').value = polishText(v); CUR.polish = null; render(); toast('결과를 입력 칸으로 옮겼습니다'); };
+}
+showDiff = true;
+
+// ── 이력 ──
+function loadHist() {
+  fetch('api/history').then(r => r.json()).then(hs => {
+    $('hist').innerHTML = hs.length ? hs.map(h => `<li><span class="tag">${KIND_KO[h.kind]}</span><span class="t" data-id="${h.id}">${esc(h.title || '(제목 없음)')}</span>
+      <span class="hint">${h.versions}판 · ${esc(h.ts.replace('T', ' ').slice(0, 16))}</span><button class="sm" data-del="${h.id}">삭제</button></li>`).join('')
+      : '<li class="hint">아직 이력이 없습니다.</li>';
+    $('hist').querySelectorAll('[data-id]').forEach(e => e.onclick = () => openHist(e.dataset.id));
+    $('hist').querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+      if (!confirm('이 이력을 삭제할까요?')) return;
+      fetch('api/history/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: b.dataset.del})}).then(loadHist);
+    });
+  });
+}
+function openHist(id) {
+  fetch('api/history/' + id).then(r => r.json()).then(rec => {
+    CUR[rec.kind] = {id: rec.id, kind: rec.kind, versions: rec.versions, vi: rec.versions.length - 1};
+    fill(rec.kind, rec.inputs || {}); selSubj = 0; setTab(rec.kind);
+  });
+}
+</script>
+</body>
+</html>
