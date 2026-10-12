@@ -2,6 +2,8 @@
 
 받는 사람과 메모만 적으면 제목 후보 3개와 업무 메일 본문을 쓰고, 받은 메일에는 답장 초안을, 내가 쓴 메일은 문장 단위로 다듬어 비교해 주는 로컬 LLM 도구입니다. 외부로 보내지 않고, 메일을 자동 발송하지도 않습니다.
 
+> ⚠️ 연구·내부 시험용 프로토타입입니다(배포·상업 서비스용 아님). 제3자 구성요소의 라이선스는 THIRD_PARTY_NOTICES.md 를 확인하세요.
+
 ![메일 실행 화면 — ① 메일 본문 ② 제목 후보](docs/img/mail-usage.png)
 
 ## 무엇을 하나
@@ -91,11 +93,15 @@ python3 selftest.py           # 가짜 LLM 으로 검증 (WORKSPACE 를 임시 �
 ## 출처·감사 (Credits)
 
 - 파이썬 표준 라이브러리만 씁니다. 윤문 검사 아이디어는 같은 저작자의 [kordoc-local](https://github.com/gggg8657/kordoc-local)·[humanize-kr-local](https://github.com/gggg8657/humanize-kr-local) 을 따름(코드 복사 아님).
-- **LLM 실행** — OpenAI 호환 API 로 호출합니다(모델 가중치는 동봉하지 않음). 기본 배포는 [Ollama](https://github.com/ollama/ollama) (MIT) 위의 Google [Gemma](https://ai.google.dev/gemma) `gemma4:31b` — 모델 이용 조건은 Gemma 배포처 참고.
+- **LLM 실행** — OpenAI 호환 API 로 호출합니다(모델 가중치는 동봉하지 않음). 기본 배포는 [Ollama](https://github.com/ollama/ollama) (MIT) 위의 Google [Gemma 4](https://huggingface.co/google/gemma-4-31B-it) `gemma4:31b` (모델 카드 기준 Apache-2.0). `LLM_MODEL` 을 주지 않으면 코드 기본값은 `qwen3:8b` ([Qwen3](https://huggingface.co/Qwen/Qwen3-8B), Apache-2.0). 다른 모델을 쓰면 그 모델의 라이선스를 확인하세요.
 - 이 도구는 [agent-page-portal](https://github.com/gggg8657/agent-page-portal) 에 연결해 쓰도록 만들었습니다(단독 실행도 됨).
 
-저작권 표기·전체 목록은 `NOTICE` 를 보세요.
+저작권 표기는 `NOTICE`, 제3자 구성요소 전체 목록·라이선스·상업 이용 확인 사항은 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 를 보세요.
 
 ## 라이선스
 
 [MIT License](LICENSE) © 2026 gggg8657.
+
+## 만든 사람
+
+DongJu Kim (gggg8657) — 설계·구현
