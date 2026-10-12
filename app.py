@@ -518,19 +518,19 @@ def run_polish(inp, model, emit, instruction=""):
 
 
 # ── 이력 (WORKSPACE/history/<id>.json — 한 메일 작업 = 한 파일, 판(version)이 쌓임) ─────
-def hist_path(hid):
+def hist_path(hid, ws=None):
     if not re.fullmatch(r"\d{8}-\d{6}-[0-9a-f]{4}", hid or ""):
         raise ValueError("잘못된 이력 id")
-    return os.path.join(WS, "history", hid + ".json")
+    return os.path.join(ws or WS, "history", hid + ".json")
 
 
-def hist_load(hid):
-    return json.loads(read(hist_path(hid)))
+def hist_load(hid, ws=None):
+    return json.loads(read(hist_path(hid, ws)))
 
 
-def hist_save(rec):
-    os.makedirs(os.path.join(WS, "history"), exist_ok=True)
-    p = hist_path(rec["id"])
+def hist_save(rec, ws=None):
+    os.makedirs(os.path.join(ws or WS, "history"), exist_ok=True)
+    p = hist_path(rec["id"], ws)
     with LOCK:
         with open(p + ".tmp", "w", encoding="utf-8") as f:
             json.dump(rec, f, ensure_ascii=False, indent=1)
@@ -544,8 +544,8 @@ def hist_title(kind, inp, res):
     return ((res.get("subjects") or [""])[0] or (inp.get("points") or "")[:40]).strip()
 
 
-def hist_list(limit=200):
-    d = os.path.join(WS, "history")
+def hist_list(limit=200, ws=None):
+    d = os.path.join(ws or WS, "history")
     if not os.path.isdir(d):
         return []
     out = []
@@ -560,13 +560,13 @@ def hist_list(limit=200):
     return out
 
 
-def hist_delete(hid):
-    p = hist_path(hid)
+def hist_delete(hid, ws=None):
+    p = hist_path(hid, ws)
     if os.path.exists(p):
         os.remove(p)
 
 
-def run(req, emit=lambda ev: None):
+def run(req, emit=lambda ev: None, ws=None):
     """POST /api/run 본체: kind=write|reply|polish, inputs, [id, instruction, prev, regen] → 이력에 판 추가 후 결과"""
     kind = req.get("kind")
     if kind not in ("write", "reply", "polish"):
@@ -577,7 +577,7 @@ def run(req, emit=lambda ev: None):
     rec = None
     if req.get("id"):
         try:
-            rec = hist_load(req["id"])
+            rec = hist_load(req["id"], ws)
         except FileNotFoundError:
             rec = None
     if kind == "polish":
@@ -594,7 +594,7 @@ def run(req, emit=lambda ev: None):
     res["instruction"] = instruction or ("다시 생성" if rec["versions"] else "")
     res["ts"] = rec["ts"]
     rec["versions"].append(res)
-    hist_save(rec)
+    hist_save(rec, ws)
     return {"id": rec["id"], "kind": kind, "version": len(rec["versions"]), "result": res}
 
 
@@ -605,6 +605,16 @@ def meta():
 
 
 # ── HTTP ───────────────────────────────────────────────────────────────
+def user_ws(h):
+    """포털이 넘긴 사용자별 작업 폴더. owner(서버 주인)·헤더 없음(단독 실행) = 예전 WORKSPACE 그대로"""
+    u = (h.headers.get("X-Agent-User") or "owner").strip()
+    if u == "owner":
+        return WS
+    d = os.path.join(WS, "u", re.sub(r"[^A-Za-z0-9_.-]", "_", u)[:64] or "_")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
 HTML = read(os.path.join(ROOT, "ui.html")) if os.path.exists(os.path.join(ROOT, "ui.html")) else "ui.html 없음"
 
 # ── 저작권 표기 (LICENSE·NOTICE 참고) ─────────────────────────────────────
@@ -650,10 +660,10 @@ class H(BaseHTTPRequestHandler):
             if path == "/api/models":
                 return self._send(models())
             if path == "/api/history":
-                return self._send(hist_list())
+                return self._send(hist_list(ws=user_ws(self)))
             m = re.fullmatch(r"/api/history/([\w-]+)", path)
             if m:
-                return self._send(hist_load(m.group(1)))
+                return self._send(hist_load(m.group(1), user_ws(self)))
             self._send(signed(HTML).encode(), "text/html; charset=utf-8")
         except (FileNotFoundError, ValueError):
             self._send({"error": "없음"}, code=404)
@@ -667,7 +677,7 @@ class H(BaseHTTPRequestHandler):
             return self._send({"error": "잘못된 요청"}, code=400)
         if self.path == "/api/history/delete":
             try:
-                hist_delete(req.get("id"))
+                hist_delete(req.get("id"), user_ws(self))
                 return self._send({"ok": True})
             except ValueError as e:
                 return self._send({"error": str(e)}, code=400)
@@ -684,7 +694,7 @@ class H(BaseHTTPRequestHandler):
             self.wfile.flush()
 
         try:
-            emit({"done": run(req, emit)})
+            emit({"done": run(req, emit, user_ws(self))})
         except (BrokenPipeError, ConnectionResetError):
             pass
         except Exception as e:
@@ -706,4 +716,4 @@ if __name__ == "__main__":
             print("\n\n" + "\n".join(r["subjects"]) + "\n\n" + r["body"])
         sys.exit(0)
     print(f"mail local → http://localhost:{PORT}  (llm={LLM_API} {LLM_BASE} {MODEL}, workspace={WS})  {_SIG}")
-    ThreadingHTTPServer(("", PORT), H).serve_forever()
+    ThreadingHTTPServer((os.environ.get("BIND", ""), PORT), H).serve_forever()
