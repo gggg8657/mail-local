@@ -236,7 +236,7 @@ def llm(system, user, model=None, temperature=0.4, on_token=lambda t: None):
                     continue
                 raise RuntimeError(f"LLM HTTP {e.code}: {msg[:300]}")
     except urllib.error.URLError as e:
-        raise RuntimeError(f"LLM 서버 연결 실패 ({LLM_BASE}): {e.reason}")
+        raise RuntimeError(f"LLM 서버 연결 실패: {e.reason}")  # 내부 주소는 응답에 넣지 않음
 
 
 def models():
