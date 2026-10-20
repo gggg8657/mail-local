@@ -21,6 +21,17 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import portal_auth  # 포털 서명 확인 관문·오류 문장 정리(원본 agent-page-portal/sdk/portal_auth.py)
 
+try:
+    from zoneinfo import ZoneInfo
+    KST = ZoneInfo("Asia/Seoul")
+except Exception:  # tzdata 없는 환경 — 한국은 일광절약시간 없음
+    KST = datetime.timezone(datetime.timedelta(hours=9), "KST")
+
+
+def today_kst():
+    """메일의 [오늘]·화면 기본 날짜는 한국 날짜 — 서버는 UTC"""
+    return datetime.datetime.now(KST).date()
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 WS = os.environ.get("WORKSPACE") or os.path.join(ROOT, "_workspace")  # 포털이 AGENT_DATA/<도구> 로 모아 줌
 LLM_API = os.environ.get("LLM_API", "ollama")            # ollama | openai (vLLM·LM Studio·llama.cpp 등)
@@ -321,7 +332,7 @@ def build_write(inp):
     en = inp.get("lang") == "en"
     purpose = inp.get("purpose") or "기타"
     rcpt = inp.get("to") or {}
-    lines = [f"[오늘] {fmt_date(datetime.date.today().isoformat(), en)}",
+    lines = [f"[오늘] {fmt_date(today_kst().isoformat(), en)}",
              f"[받는 사람] {' '.join(x for x in (rcpt.get('org'), rcpt.get('name'), rcpt.get('title')) if x) or '(미상)'} — 관계: {rcpt.get('relation') or '미상'}",
              f"[보내는 사람] {sender_line(inp, en) or '(미상)'}",
              f"[목적] {purpose} — {PURPOSES.get(purpose, PURPOSES['기타'])}",
@@ -338,7 +349,7 @@ def build_write(inp):
 
 def build_reply(inp):
     en = inp.get("lang") == "en" or (inp.get("lang") == "auto" and not re.search(r"[가-힣]", inp.get("original") or ""))
-    lines = [f"[오늘] {fmt_date(datetime.date.today().isoformat(), en)}",
+    lines = [f"[오늘] {fmt_date(today_kst().isoformat(), en)}",
              f"[보내는 사람(나)] {sender_line(inp, en) or '(미상)'}",
              f"[원문 보낸 사람과의 관계] {(inp.get('to') or {}).get('relation') or '미상'}",
              f"[받은 메일 원문]\n<<<\n{(inp.get('original') or '').strip()[:MAX_IN]}\n>>>",
@@ -602,7 +613,7 @@ def run(req, emit=lambda ev: None, ws=None):
 def meta():
     return {"relations": RELATIONS, "purposes": list(PURPOSES), "tones": list(TONES), "lengths": list(LENGTHS),
             "polish_modes": [{"id": k, "label": v[0]} for k, v in POLISH_MODES.items()],
-            "model": MODEL, "today": datetime.date.today().isoformat()}
+            "model": MODEL, "today": today_kst().isoformat()}
 
 
 # ── HTTP ───────────────────────────────────────────────────────────────
