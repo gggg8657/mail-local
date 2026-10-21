@@ -173,6 +173,50 @@ try:
     assert len(app.hist_list()) == 6
     srv.shutdown()
 
+    # 12-1) 브라우저가 떠나도(첫 이벤트 뒤 쓰기가 BrokenPipeError) 윤문은 끝까지 — 이력에 남고 서버 오류·트레이스백 없음
+    import io
+
+    class Cut:
+        def __init__(s, f, n):
+            s.f, s.n = f, n
+
+        def write(s, b):
+            s.n -= 1
+            if s.n < 0:
+                raise BrokenPipeError(32, "Broken pipe")
+            return s.f.write(b)
+
+        def flush(s):
+            pass
+
+        def __getattr__(s, k):
+            return getattr(s.f, k)
+
+    class CutH(app.H):
+        def setup(s):
+            super().setup()
+            s.wfile = Cut(s.wfile, 2)  # 응답 머리 + 첫 이벤트까지만 닿음
+
+    ERRS = []
+
+    class Srv(app.ThreadingHTTPServer):
+        def handle_error(s, rq, addr):
+            ERRS.append(sys.exc_info()[1])
+    cut = Srv(("127.0.0.1", 0), CutH)
+    threading.Thread(target=cut.serve_forever, daemon=True).start()
+    err0, sys.stderr = sys.stderr, io.StringIO()
+    cap = sys.stderr
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{cut.server_address[1]}/api/run",
+                                     json.dumps({"kind": "polish", "inputs": {"text": "떠난 뒤 회의 할수 있어요.", "mode": "spell"}}).encode())
+        got = urllib.request.urlopen(req).read().decode()
+    finally:
+        sys.stderr = err0
+    cut.shutdown()
+    hs = app.hist_list()
+    assert got.count("data: ") == 1 and len(hs) == 7 and app.hist_load(hs[0]["id"])["versions"][-1]["text"] == "떠난 뒤 회의 할 수 있어요.", (got, hs[0])
+    assert not ERRS and "Traceback" not in cap.getvalue() and cap.getvalue().count("연결 끊김") == 1, (ERRS, cap.getvalue())
+
     # 13) 폐쇄망: 외부 CDN·외부 요청 없음, 저작권 표기
     ui = app.read(os.path.join(app.ROOT, "ui.html"))
     assert not re.search(r'<(script|link|img)[^>]+(src|href)="https?://', ui) and "fetch('http" not in ui, "외부 참조 있음"
